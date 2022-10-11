@@ -7,6 +7,16 @@ import numpy as np
 BIT_STRING_SIZE = 16
 RANDOM_STATE = 5403
 
+def sample_edge():
+    return (np.random.randint(0, BIT_STRING_SIZE), np.random.randint(0, BIT_STRING_SIZE))
+
+def sample_edges(num_edges):
+    edges = []
+    for _ in range(num_edges):
+        edges.append(sample_edge())
+    return [(e1, e2) for e1, e2 in edges if e1 != e2]
+
+
 problems = {
     'Flip Flop': mlrose.DiscreteOpt(
         length=BIT_STRING_SIZE,
@@ -26,16 +36,20 @@ problems = {
     ),
     'Queens': mlrose.DiscreteOpt(
         length=BIT_STRING_SIZE,
+        maximize=False,
+        max_val=BIT_STRING_SIZE,
         fitness_fn=mlrose.Queens()
     ),
     'One-Max': mlrose.DiscreteOpt(
         length=BIT_STRING_SIZE,
         fitness_fn=mlrose.OneMax()
     ),
-    # 'Max K Color': mlrose.DiscreteOpt(
-    #     length=BIT_STRING_SIZE,
-    #     fitness_fn=mlrose.MaxKColor()
-    # )
+    'Max K Color': mlrose.DiscreteOpt(
+        length=BIT_STRING_SIZE,
+        max_val=int(np.sqrt(BIT_STRING_SIZE)),
+        maximize=False,
+        fitness_fn=mlrose.MaxKColor(sample_edges(BIT_STRING_SIZE ** 2))
+    )
 }
 
 initial_state = np.zeros((BIT_STRING_SIZE,))
@@ -55,7 +69,7 @@ for problem_name in problems:
     for optim_name in optimizers:
         best_state, best_fitness, fitness_curve = optimizers[optim_name](
             problem=problems[problem_name],
-            max_iters=100,
+            max_iters=500,
             #init_state=initial_state,
             curve=True,
             random_state=RANDOM_STATE
@@ -64,12 +78,21 @@ for problem_name in problems:
             'best_state': best_state,
             'best_fitness': best_fitness,
             'fitness_curve': fitness_curve,
-            'wall_clock_time': time.time() - start
+            'wall_clock_time': round((time.time() - start) / 0.01) * 0.01
         }
 
-for problem_name in problems:  
+print('\nbest fitness')
+for problem_name in problems:
     best_fitni = {
          key: output[problem_name][key]['best_fitness']
-         for key in output['6-Peaks']
+         for key in output[problem_name]
+    }
+    print(problem_name, best_fitni)
+
+print('\nwall clock time')
+for problem_name in problems:
+    best_fitni = {
+         key: output[problem_name][key]['wall_clock_time']
+         for key in output[problem_name]
     }
     print(problem_name, best_fitni)
