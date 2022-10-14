@@ -5,6 +5,8 @@ import mlrose_hiive as mlrose
 import numpy as np
 import pandas as pd
 
+import pickle
+
 RANDOM_STATE = 5403
 
 def sample_edge(bit_string_size):
@@ -84,17 +86,9 @@ optimizers = {
     'Genetic': mlrose.genetic_alg
 }
 
-problem_names = [
-    'Flip Flop',
-    '4-Peaks',
-    '6-Peaks',
-    'Continuous Peaks',
-    'Queens',
-    'One-Max',
-    'Max K Color'
-]
+problem_names = list(get_new_problems(8).keys())
 
-def run_algorithms(bit_string_size, extra_params=None):
+def run_algorithms(bit_string_size, max_attempts=10):
     
     # need to sample these fresh each time to avoid weird feval bug
     problems = get_new_problems(bit_string_size)
@@ -104,13 +98,11 @@ def run_algorithms(bit_string_size, extra_params=None):
         start = time.time()
         output[problem_name] = {}
         for optim_name in optimizers:
-            selected_extra_params = {}
             best_state, best_fitness, fitness_curve = optimizers[optim_name](
                 problem=problems[problem_name],
-                max_iters=50,
                 curve=True,
                 random_state=RANDOM_STATE,
-                max_attempts=100
+                max_attempts=max_attempts,
             )
             output[problem_name][optim_name] = {
                 'best_state': best_state,
@@ -121,22 +113,11 @@ def run_algorithms(bit_string_size, extra_params=None):
             
     return output
 
-run_algorithms(8)
+complete_collection = {}
 
-print('\nbest fitness')
-for problem_name in problems:
-    best_fitni = {
-         key: output[problem_name][key]['best_fitness']
-         for key in output[problem_name]
-    }
-    print(problem_name, best_fitni)
-
-print('\nwall clock time')
-for problem_name in problems:
-    best_fitni = {
-         key: output[problem_name][key]['wall_clock_time']
-         for key in output[problem_name]
-    }
-    print(problem_name, best_fitni)
-    
-output['Flip Flop']['MIMIC']
+for bit_str_sz in [8, 16, 32, 64]:
+    for mx_atmpts in [10, 50, 100]:
+        output = run_algorithms(bit_string_size=bit_str_sz, max_attempts=mx_atmpts)
+        complete_collection[f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'] = output
+        
+pickle.dump(complete_collection, 'complete_collection.pkl')
