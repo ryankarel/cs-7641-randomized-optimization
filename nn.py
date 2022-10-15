@@ -144,19 +144,19 @@ def redefine_neural_network_problem():
 
 
 
-best_state, best_fitness, fitness_curve = mlrose.simulated_annealing(
-    problem=redefine_neural_network_problem(),
-    curve=True,
-    random_state=random_state,
-    init_state=init_state,
-    max_attempts=3
-)
+# best_state, best_fitness, fitness_curve = mlrose.simulated_annealing(
+#     problem=redefine_neural_network_problem(),
+#     curve=True,
+#     random_state=random_state,
+#     init_state=init_state,
+#     max_attempts=3
+# )
 
-pd.Series(fitness_curve[:, 0]).plot()
+# pd.Series(fitness_curve[:, 0]).plot()
 
-score_model(
-    update_model(mlp_classifier, best_state),
-    X_wine_test,
-    Y_wine_test
-)
+# score_model(
+#     update_model(mlp_classifier, best_state),
+#     X_wine_test,
+#     Y_wine_test
+# )
 

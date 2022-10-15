@@ -126,7 +126,7 @@ def run_algorithms(bit_string_size=32, max_attempts=10):
                         problem=get_new_problems(bit_string_size)[problem_name],
                         curve=True,
                         random_state=RANDOM_STATE + max_attempts,
-                        max_attempts=max_attempts,
+                        max_attempts=max_attempts // 2,
                         init_state=INIT_NN_STATE,
                         **extra_param_options[extra_param_key]
                     )
