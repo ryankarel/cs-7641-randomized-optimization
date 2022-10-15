@@ -107,7 +107,7 @@ negate = {
     'Wine Neural Network': 1
 }
 
-def run_algorithms(bit_string_size=32, max_attempts=10):
+def run_algorithms(bit_string_size=16, max_attempts=8):
     
     # need to sample these fresh each time to avoid weird feval bug
     problems = get_new_problems(bit_string_size)
@@ -122,6 +122,8 @@ def run_algorithms(bit_string_size=32, max_attempts=10):
             for extra_param_key in extra_param_options:
                 print(problem_name, optim_name, extra_param_key, f'{(time.time() - start) / 60:.1f}m')
                 if problem_name == 'Wine Neural Network':
+                    if bit_string_size != 16:
+                        continue
                     best_state, best_fitness, fitness_curve = optimizers[optim_name](
                         problem=get_new_problems(bit_string_size)[problem_name],
                         curve=True,
@@ -149,12 +151,12 @@ def run_algorithms(bit_string_size=32, max_attempts=10):
 
 complete_collection = {}
 
-bit_sz_options = [8, 32, 64]
+bit_sz_options = [8, 16, 32]
 
 for bit_str_sz in bit_sz_options:
     complete_collection[f'BS={bit_str_sz}'] = run_algorithms(
         bit_string_size=bit_str_sz,
-        max_attempts=20
+        max_attempts=8
     )
         
 with open('complete_collection.pkl', 'wb') as f:
@@ -166,9 +168,8 @@ complete_collection.keys()
 for problem_name in problem_names:
     Path(f'plots/{problem_name}').mkdir(parents=True, exist_ok=True)
     for opt_name in optimizers:
-        bit_str_sz = 32
+        bit_str_sz = 16
         fitness_curves = pd.DataFrame(columns=['Iteration', 'Fitness', 'Params'])
-        mx_atmpts = 10
         algos = complete_collection[f'BS={bit_str_sz}'][problem_name][opt_name]
         for algo in algos:
             fc = algos[algo]['fitness_curve']
@@ -192,9 +193,8 @@ for problem_name in problem_names:
 for problem_name in problem_names:
     Path(f'plots/{problem_name}').mkdir(parents=True, exist_ok=True)
     for opt_name in optimizers:
-        bit_str_sz = 32
+        bit_str_sz = 16
         fitness_curves = pd.DataFrame(columns=['Iteration', 'F-evals', 'Params'])
-        mx_atmpts = 10
         algos = complete_collection[f'BS={bit_str_sz}'][problem_name][opt_name]
         for algo in algos:
             fc = algos[algo]['fitness_curve']
@@ -213,4 +213,54 @@ for problem_name in problem_names:
             f'plots/{problem_name}/{opt_name.replace(" ", "")}_fevals.png',
             dpi=300
         )
+            
+for problem_name in problem_names:
+    Path(f'plots/{problem_name}').mkdir(parents=True, exist_ok=True)
+    for opt_name in optimizers:
+        fitness_curves = pd.DataFrame(columns=['Iteration', 'F-evals', 'Params'])
+        for bit_str_sz in bit_sz_options:
+            algos = complete_collection[f'BS={bit_str_sz}'][problem_name][opt_name]
+            for algo in algos:
+                fc = algos[algo]['fitness_curve']
+                fitness_curves = fitness_curves.append(
+                    pd.DataFrame({'Wall Clock Time': algos[algo]['wall_clock_time'],
+                                  'F-evals': fc[:, 1].max(),
+                                  'Best Fitness': algos[algo]['best_fitness'] * negate[problem_name],
+                                  'Params': algo,
+                                  'Input Size': bit_str_sz}, index=[0])
+                )
+        plt.figure()
+        sns.barplot(
+            data=fitness_curves.reset_index(drop=True),
+            x='Input Size',
+            y='F-evals',
+            hue='Params'
+        ).set_title(f'Input Size Impact on F-evals - {problem_name} - {opt_name}').get_figure().savefig(
+            f'plots/{problem_name}/{opt_name.replace(" ", "")}_inputsize_fevals.png',
+            dpi=300
+        )
+            
+        plt.figure()
+        sns.barplot(
+            data=fitness_curves.reset_index(drop=True),
+            x='Input Size',
+            y='Wall Clock Time',
+            hue='Params'
+        ).set_title(f'Input Size Impact on Wall Clock Time - {problem_name} - {opt_name}').get_figure().savefig(
+            f'plots/{problem_name}/{opt_name.replace(" ", "")}_inputsize_wallclock.png',
+            dpi=300
+        )
+            
+        plt.figure()
+        sns.barplot(
+            data=fitness_curves.reset_index(drop=True),
+            x='Input Size',
+            y='Best Fitness',
+            hue='Params'
+        ).set_title(f'Best Fitness - {problem_name} - {opt_name}').get_figure().savefig(
+            f'plots/{problem_name}/{opt_name.replace(" ", "")}_bestfitness.png',
+            dpi=300
+        )
+            
+
          
