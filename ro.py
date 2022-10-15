@@ -155,7 +155,7 @@ bit_sz_options = [8, 16, 32]
 for bit_str_sz in bit_sz_options:
     complete_collection[f'BS={bit_str_sz}'] = run_algorithms(
         bit_string_size=bit_str_sz,
-        max_attempts=8
+        max_attempts=12
     )
         
 with open('complete_collection.pkl', 'wb') as f:

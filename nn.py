@@ -19,8 +19,8 @@ from copy import deepcopy
 
 random_state = 23523
 
-X_wine = pd.read_pickle(r'C:\Users\rache\cs-7641-supervised-learning\data\wine\X.pkl')
-Y_wine = pd.read_pickle(r'C:\Users\rache\cs-7641-supervised-learning\data\wine\Y.pkl')
+X_wine = pd.read_pickle(r'X.pkl')
+Y_wine = pd.read_pickle(r'Y.pkl')
 
 X_wine_train, X_wine_test, Y_wine_train, Y_wine_test = train_test_split(
     X_wine, Y_wine,
