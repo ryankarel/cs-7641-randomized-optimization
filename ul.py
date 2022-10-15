@@ -4,8 +4,11 @@ import time
 import mlrose_hiive as mlrose
 import numpy as np
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 import pickle
+from pathlib import Path
 
 RANDOM_STATE = 5403
 
@@ -42,22 +45,22 @@ def fevals_plot(fitness_curve, title):
 
 def get_new_problems(bit_string_size):
     problems = {
-        'Flip Flop': mlrose.DiscreteOpt(
-            length=bit_string_size,
-            fitness_fn=mlrose.FlipFlop()
-        ),
+        # 'Flip Flop': mlrose.DiscreteOpt(
+        #     length=bit_string_size,
+        #     fitness_fn=mlrose.FlipFlop()
+        # ),
         '4-Peaks': mlrose.DiscreteOpt(
             length=bit_string_size,
             fitness_fn=mlrose.FourPeaks()
         ),
-        '6-Peaks': mlrose.DiscreteOpt(
-            length=bit_string_size,
-            fitness_fn=mlrose.SixPeaks()
-        ),
-        'Continuous Peaks': mlrose.DiscreteOpt(
-            length=bit_string_size,
-            fitness_fn=mlrose.ContinuousPeaks()
-        ),
+        # '6-Peaks': mlrose.DiscreteOpt(
+        #     length=bit_string_size,
+        #     fitness_fn=mlrose.SixPeaks()
+        # ),
+        # 'Continuous Peaks': mlrose.DiscreteOpt(
+        #     length=bit_string_size,
+        #     fitness_fn=mlrose.ContinuousPeaks()
+        # ),
         'Queens': mlrose.DiscreteOpt(
             length=bit_string_size,
             maximize=False,
@@ -68,12 +71,12 @@ def get_new_problems(bit_string_size):
             length=bit_string_size,
             fitness_fn=mlrose.OneMax()
         ),
-        'Max K Color': mlrose.DiscreteOpt(
-            length=bit_string_size,
-            max_val=int(np.sqrt(bit_string_size)),
-            maximize=False,
-            fitness_fn=mlrose.MaxKColor(sample_edges(bit_string_size ** 2, bit_string_size))
-        )
+        # 'Max K Color': mlrose.DiscreteOpt(
+        #     length=bit_string_size,
+        #     max_val=int(np.sqrt(bit_string_size)),
+        #     maximize=False,
+        #     fitness_fn=mlrose.MaxKColor(sample_edges(bit_string_size ** 2, bit_string_size))
+        # )
     }
     return problems
 
@@ -88,6 +91,16 @@ optimizers = {
 
 problem_names = list(get_new_problems(8).keys())
 
+negate = {
+    'Flip Flop': 1,
+    '4-Peaks': 1,
+    '6-Peaks': 1,
+    'Continuous Peaks': 1,
+    'Queens': -1,
+    'One-Max': 1,
+    'Max K Color': -1
+}
+
 def run_algorithms(bit_string_size, max_attempts=10):
     
     # need to sample these fresh each time to avoid weird feval bug
@@ -101,7 +114,7 @@ def run_algorithms(bit_string_size, max_attempts=10):
             best_state, best_fitness, fitness_curve = optimizers[optim_name](
                 problem=problems[problem_name],
                 curve=True,
-                random_state=RANDOM_STATE,
+                random_state=RANDOM_STATE + max_attempts,
                 max_attempts=max_attempts,
             )
             output[problem_name][optim_name] = {
@@ -115,9 +128,95 @@ def run_algorithms(bit_string_size, max_attempts=10):
 
 complete_collection = {}
 
-for bit_str_sz in [8, 16, 32, 64]:
-    for mx_atmpts in [10, 50, 100]:
+start = time.time()
+for bit_str_sz in [8, 32, 64]:
+    for mx_atmpts in [5, 10, 20]:
+        key = f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'
+        print(key, f'{(time.time() - start) / 60:.1f} m')
         output = run_algorithms(bit_string_size=bit_str_sz, max_attempts=mx_atmpts)
-        complete_collection[f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'] = output
+        complete_collection[key] = output
         
-pickle.dump(complete_collection, 'complete_collection.pkl')
+with open('complete_collection.pkl', 'wb') as f:
+    pickle.dump(str(complete_collection), f)
+    
+complete_collection.keys()
+
+for problem_name in problem_names:
+    Path(f'plots/{problem_name}').mkdir(parents=True, exist_ok=True)
+    for opt_name in optimizers:
+        bit_str_sz = 64
+        fitness_curves = pd.DataFrame(columns=['Iteration', 'Fitness', 'Max Attempts'])
+        for mx_atmpts in [20, 10, 5]:
+            key = f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'
+            algos = complete_collection[key][problem_name]
+            fc = algos[opt_name]['fitness_curve']
+            fitness_curves = fitness_curves.append(
+                pd.DataFrame({'Iteration': range(len(fc)),
+                              'Fitness': fc[:, 0] * negate[problem_name],
+                              'Max Attempts': mx_atmpts})
+            )
+        plt.figure()
+        sns.lineplot(
+            data=fitness_curves.reset_index(drop=True),
+            x='Iteration',
+            y='Fitness',
+            hue='Max Attempts'
+        ).set_title(f'Convergence Plot - {problem_name} - {opt_name}').get_figure().savefig(
+            f'plots/{problem_name}/{opt_name.replace(" ", "")}_convergence.png',
+            dpi=400
+        )
+            
+for problem_name in problem_names:
+    for opt_name in optimizers:
+        mx_atmpts = 10
+        fitness_curves = pd.DataFrame(columns=['Iteration', 'Fitness', 'Max Attempts'])
+        for bit_str_sz in [8, 32, 64]:
+            key = f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'
+            algos = complete_collection[key][problem_name]
+            fc = algos[opt_name]['fitness_curve']
+            fitness_curves = fitness_curves.append(
+                pd.DataFrame({'Iteration': range(len(fc)),
+                              'Fitness': fc[:, 0] * negate[problem_name],
+                              'Input Size': bit_str_sz})
+            )
+        plt.figure()
+        sns.lineplot(
+            data=fitness_curves.reset_index(drop=True),
+            x='Iteration',
+            y='Fitness',
+            hue='Input Size'
+        ).set_title(f'Problem Size Plot - {problem_name} - {opt_name}').get_figure().savefig(
+            f'plots/{problem_name}/{opt_name.replace(" ", "")}_probsize.png',
+            dpi=400
+        )
+            
+for problem_name in problem_names:
+    comparison = pd.Series()
+    for opt_name in optimizers:
+        mx_atmpts = 20
+        bit_str_sz = 64
+        key = f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'
+        algos = complete_collection[key][problem_name]
+        val = algos[opt_name]['wall_clock_time']
+        comparison.loc[opt_name] = val
+    comparison.plot(kind='bar', title=f'Wall Clock Time - {problem_name}').get_figure().savefig(
+        f'plots/{problem_name}/wallclock.png',
+        dpi=400
+    )
+    
+for problem_name in problem_names:
+    comparison = pd.Series()
+    for opt_name in optimizers:
+        mx_atmpts = 20
+        bit_str_sz = 64
+        key = f'BitSize={bit_str_sz}, MaxAttempts={mx_atmpts}'
+        algos = complete_collection[key][problem_name]
+        val = algos[opt_name]['best_fitness']
+        comparison.loc[opt_name] = val
+    comparison.plot(kind='bar', title=f'Best Fitness - {problem_name}').get_figure().savefig(
+        f'plots/{problem_name}/best_fitness.png',
+        dpi=400
+    )
+                
+            
+    

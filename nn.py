@@ -31,4 +31,5 @@ X_wine_train, X_wine_test, Y_wine_train, Y_wine_test = train_test_split(
 
 previous_wine_model.fit(X_wine_train, Y_wine_train)
 
-previous_wine_model.coefs_
+previous_wine_model.coefs_[1].shape
+previous_wine_model.intercepts_[0].shape
