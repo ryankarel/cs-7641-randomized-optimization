@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import pickle
 from pathlib import Path
 
+from nn import redefine_neural_network_problem, INIT_NN_STATE
+
 RANDOM_STATE = 5403
 
 def sample_edge(bit_string_size):
@@ -55,7 +57,8 @@ def get_new_problems(bit_string_size):
             max_val=int(np.sqrt(bit_string_size)),
             maximize=False,
             fitness_fn=mlrose.MaxKColor(sample_edges(bit_string_size ** 2, bit_string_size))
-        )
+        ),
+        'Wine Neural Network': redefine_neural_network_problem()
     }
     return problems
 
@@ -100,7 +103,8 @@ negate = {
     'Continuous Peaks': 1,
     'Queens': -1,
     'One-Max': 1,
-    'Max K Color': -1
+    'Max K Color': -1,
+    'Wine Neural Network': 1
 }
 
 def run_algorithms(bit_string_size=32, max_attempts=10):
@@ -117,13 +121,23 @@ def run_algorithms(bit_string_size=32, max_attempts=10):
             output[problem_name][optim_name] = {}
             for extra_param_key in extra_param_options:
                 print(problem_name, optim_name, extra_param_key, f'{(time.time() - start) / 60:.1f}m')
-                best_state, best_fitness, fitness_curve = optimizers[optim_name](
-                    problem=get_new_problems(bit_string_size)[problem_name],
-                    curve=True,
-                    random_state=RANDOM_STATE + max_attempts,
-                    max_attempts=max_attempts,
-                    **extra_param_options[extra_param_key]
-                )
+                if problem_name == 'Wine Neural Network':
+                    best_state, best_fitness, fitness_curve = optimizers[optim_name](
+                        problem=get_new_problems(bit_string_size)[problem_name],
+                        curve=True,
+                        random_state=RANDOM_STATE + max_attempts,
+                        max_attempts=max_attempts,
+                        init_state=INIT_NN_STATE,
+                        **extra_param_options[extra_param_key]
+                    )
+                else:
+                    best_state, best_fitness, fitness_curve = optimizers[optim_name](
+                        problem=get_new_problems(bit_string_size)[problem_name],
+                        curve=True,
+                        random_state=RANDOM_STATE + max_attempts,
+                        max_attempts=max_attempts,
+                        **extra_param_options[extra_param_key]
+                    )
                 output[problem_name][optim_name][extra_param_key] = {
                     'best_state': best_state,
                     'best_fitness': best_fitness,
