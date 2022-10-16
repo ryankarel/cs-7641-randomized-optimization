@@ -130,6 +130,7 @@ custom_fitness = mlrose.CustomFitness(
     problem_type='continuous',
     **kwargs
 )
+    
 
 def redefine_neural_network_problem():
     continuous_optimization_problem = mlrose.ContinuousOpt(
@@ -138,7 +139,7 @@ def redefine_neural_network_problem():
         maximize=True,
         min_val=-3,
         max_val=3,
-        step=0.10
+        step=0.20
     )
     return continuous_optimization_problem
 
