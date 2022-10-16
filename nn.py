@@ -144,20 +144,25 @@ def redefine_neural_network_problem():
     return continuous_optimization_problem
 
 
+best_state, best_fitness, fitness_curve = mlrose.genetic_alg(
+    problem=redefine_neural_network_problem(),
+    curve=True,
+    random_state=random_state,
+    max_attempts=5,
+    max_iters=300,
+    pop_size=200,
+    mutation_prob=0.1
+)
 
-# best_state, best_fitness, fitness_curve = mlrose.simulated_annealing(
-#     problem=redefine_neural_network_problem(),
-#     curve=True,
-#     random_state=random_state,
-#     init_state=init_state,
-#     max_attempts=3
-# )
+score_model(
+    update_model(mlp_classifier, best_state),
+    X_wine_test,
+    Y_wine_test
+)
 
-# pd.Series(fitness_curve[:, 0]).plot()
-
-# score_model(
-#     update_model(mlp_classifier, best_state),
-#     X_wine_test,
-#     Y_wine_test
-# )
+score_model(
+    previous_wine_model,
+    X_wine_test,
+    Y_wine_test
+)
 
