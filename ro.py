@@ -131,7 +131,7 @@ def run_algorithms(bit_string_size=16, max_attempts=8):
                         curve=True,
                         random_state=RANDOM_STATE + max_attempts,
                         max_attempts=5,
-                        max_iters=500,
+                        max_iters=1000,
                         **extra_param_options[extra_param_key]
                     )
                 else:
